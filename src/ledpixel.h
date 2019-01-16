@@ -74,18 +74,38 @@ private:
     void colorInformation(uint8_t width, uint8_t sector, uint8_t imageIteraction);
     void selectSector(uint8_t sector);
 public:
-    void matrixUpdate();
     void matrixInit();
-    ledmatrix(/* args */);
+    void matrixUpdate();
+    void drawPixel(int16_t x, int16_t y, uint16_t color);
+    void drawPixelRGB565(int16_t x, int16_t y, uint16_t color);
+    void drawPixelRGB888(int16_t x, int16_t y, uint16_t color);
+    void drawPixelRGB444(int16_t x, int16_t y, uint16_t color);
+    void bufferFill(int16_t x, int16_t y, uint8_t r, uint8_t g,uint8_t b);
+    /*delete this?
+    ledmatrix(/* args *//*);
     ~ledmatrix();
+    */
 };
-
-ledmatrix::ledmatrix(/* args */)
+/*delete this?
+ledmatrix::ledmatrix(/*args *//*)
 {
 }
 
 ledmatrix::~ledmatrix()
 {
+}
+*/
+
+void ledmatrix::matrixInit(){
+    //Set 0utputs
+    TRISE = 0xFF01;
+    TRISF = 0xFFAF;
+    TRISD = 0xF71F;
+
+    LATE = 0;
+    LATF = 0;
+    LATD = 0;
+    //lat_OE = 1; //turn off output enable -> MAYBE NOT NEEDED - TEST!!
 }
 
 void ledmatrix::matrixUpdate(){
@@ -98,29 +118,67 @@ void ledmatrix::matrixUpdate(){
     }
 }
 
-void ledmatrix::matrixInit(){
-    //Set 0utputs
-  TRISE = 0xFF01;
-  TRISF = 0xFFAF;
-  TRISD = 0xF71F;
-
-  LATE = 0;
-  LATF = 0;
-  LATD = 0;
-  //lat_OE = 1; //turn off output enable -> MAYBE NOT NEEDED - TEST!!
+/* bufferFill
+Description: writes a pixel with 12bit color depth(RGB444) on the buffer
+Variables:
+    x: x position
+    y: y position
+    r: 4 bit color red
+    g: 4 bit color green
+    b: 4 bit color
+*/
+void ledmatrix::bufferFill(int16_t x, int16_t y, uint8_t r, uint8_t g,uint8_t b){
+    uint16_t auxColor = (r << 12) | (g << 8) | (b << 4);
+    matrixBuffer[x][y] = auxColor;
 }
 
+
+void ledmatrix::drawPixel(int16_t x, int16_t y, uint16_t color){
+    drawPixelRGB565(x, y, color);
+}
+
+void ledmatrix::drawPixelRGB565(int16_t x, int16_t y, uint16_t color){
+    //RGB565 to RGB888 
+    //color565_444(color);
+    bufferFill(x, y, r, g, b);
+}
+
+void ledmatrix::drawPixelRGB888(int16_t x, int16_t y, uint16_t color){
+    //RGB888 to RGB444 
+    //color565_444(color);
+    bufferFill(x, y, r, g, b);
+}
+
+void ledmatrix::drawPixelRGB444(int16_t x, int16_t y, uint16_t color){
+    uint8_t r = (color >> 8) & 0x0F;
+    uint8_t g = (color >> 4) & 0x0F;
+    uint8_t b = color & 0x0F;
+    bufferFill(x, y, r, g, b);
+}
+
+/* selectSector
+Description: writes on the registers the sector information
+Variables:
+  sector: a sector aggregates 2 rows: row and row+16
+    values: [0;15]
+*/
+void ledmatrix::selectSector(uint8_t sector){
+    latA = (sector & 0x01); //LSB
+    latB = (sector & 0x02) >> 1;
+    latC = (sector & 0x04) >> 2;
+    latD = (sector & 0x08) >> 3; //MSB
+}
 
 /* latch
 Description:  writes on the LAT and OE registers to indicate that the color information data for that sector is over.
               After that turns off the LEDs, waits for the signal propagation to happen and turns ON the LEDs again
 */
 void ledmatrix::latch(uint8_t propagationTime){
-  latLAT = 1;
-  latLAT = 0;
-  lat_OE = 0;
-  delay(propagationTime); //NEEDS DELAY for propagation! 
-  lat_OE = 1;
+    latLAT = 1;
+    latLAT = 0;
+    lat_OE = 0;
+    delay(propagationTime); //NEEDS DELAY for propagation! 
+    lat_OE = 1;
 }
 
 /* colorInformation
@@ -135,17 +193,17 @@ Variables:
     value: [0;3]
 */
 void ledmatrix::colorInformation(uint8_t width, uint8_t sector, uint8_t imageIteraction){
-  for(uint8_t col = 0; col < width; col++){
-    //sector 1
-    latR1 = (matrixBuffer[sector][col] >> (15 - imageIteration)) & 0x01;   //matrixBuffer[sector][col][15 - imageIteraction];
-    latG1 = (matrixBuffer[sector][col] >> (11 - imageIteration)) & 0x01;
-    latB1 = (matrixBuffer[sector][col] >> (7 - imageIteration)) & 0x01;
-    //sector 2
-    latR2 = (matrixBuffer[sector+16][col] >> (15 - imageIteration)) & 0x01;
-    latG2 = (matrixBuffer[sector+16][col] >> (11 - imageIteration)) & 0x01;
-    latB2 = (matrixBuffer[sector+16][col] >> (7 - imageIteration)) & 0x01;
-    //registers to leds
-    latCLK = 1;
-    latCLK = 0; 
-  }
+    for(uint8_t col = 0; col < width; col++){
+        //sector 1
+        latR1 = (matrixBuffer[sector][col] >> (15 - imageIteration)) & 0x01;   //matrixBuffer[sector][col][15 - imageIteraction];
+        latG1 = (matrixBuffer[sector][col] >> (11 - imageIteration)) & 0x01;
+        latB1 = (matrixBuffer[sector][col] >> (7 - imageIteration)) & 0x01;
+        //sector 2
+        latR2 = (matrixBuffer[sector+16][col] >> (15 - imageIteration)) & 0x01;
+        latG2 = (matrixBuffer[sector+16][col] >> (11 - imageIteration)) & 0x01;
+        latB2 = (matrixBuffer[sector+16][col] >> (7 - imageIteration)) & 0x01;
+        //registers to leds
+        latCLK = 1;
+        latCLK = 0; 
+    }
 }
