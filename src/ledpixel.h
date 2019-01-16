@@ -1,3 +1,5 @@
+#include <Arduino.h>
+#include <Adafruit_GFX.h>
 //#define CHANNELMIX444(r,g,b) r>>12|g>>8|b>>4
 
 //PORT E
@@ -65,7 +67,7 @@
     }
 } pixel444;*/
 
-class ledmatrix
+class ledmatrix : public Adafruit_GFX
 {
 private:
     uint16_t matrixBuffer[32][64]; //R3 R2 R1 R0 | G3 G2 G1 G0 | B3 B2 B1 B0 | - - - -
@@ -80,20 +82,18 @@ public:
     void drawPixelRGB888(uint16_t x, uint16_t y, uint32_t color);
     void drawPixelRGB444(uint16_t x, uint16_t y, uint16_t color);
     void bufferFill(uint16_t x, uint16_t y, uint8_t r, uint8_t g, uint8_t b);
-    /*delete this?
-    ledmatrix(/* args *//*);
+    
+    ledmatrix(/* args */);
     ~ledmatrix();
-    */
 };
-/*delete this?
-ledmatrix::ledmatrix(/*args *//*)
+ledmatrix::ledmatrix(/*args */):Adafruit_GFX(64, 32)
 {
 }
 
 ledmatrix::~ledmatrix()
 {
 }
-*/
+
 
 void ledmatrix::matrixInit(){
     //Set 0utputs
@@ -109,14 +109,13 @@ void ledmatrix::matrixInit(){
 }
 
 void ledmatrix::matrixUpdate(){
-    static uint8_t iteraction = 0;
+    static uint8_t iteration = 0;
     for(uint8_t sector = 0; sector < 16; sector++){
         selectSector(sector);
-        colorInformation(64,sector,iteraction);
-        latch(1);
-        delay(50);
+        colorInformation(64,sector,iteration);
+        latch(2 * (8>>iteration));
     }
-    iteraction = (iteraction + 1) % 4; //0->1->2->3->0...
+    iteration = (iteration + 1) % 4; //0->1->2->3->0...
 }
 
 /* bufferFill
@@ -138,9 +137,11 @@ void ledmatrix::drawPixel(uint16_t x, uint16_t y, uint16_t color){
 }
 
 void ledmatrix::drawPixelRGB565(uint16_t x, uint16_t y, uint16_t color){
-    //RGB565 to RGB888 
-    //color565_444(color);
-    //bufferFill(x, y, r, g, b);
+    //RGB565 to RGB444 
+    uint8_t r =  color >> 12;        // RRRRrggggggbbbbb
+    uint8_t g = (color >>  7) & 0xF; // rrrrrGGGGggbbbbb
+    uint8_t b = (color >>  1) & 0xF; // rrrrrggggggBBBBb
+    bufferFill(x, y, r, g, b);
 }
 
 void ledmatrix::drawPixelRGB888(uint16_t x, uint16_t y, uint32_t color){
@@ -177,7 +178,7 @@ void ledmatrix::latch(uint8_t propagationTime){
     latLAT = 1;
     latLAT = 0;
     lat_OE = 0;
-    delay(propagationTime); //NEEDS DELAY for propagation! 
+    delayMicroseconds(propagationTime); //NEEDS DELAY for propagation! 
     lat_OE = 1;
 }
 
@@ -189,7 +190,7 @@ Variables:
     values: [0;15]
   imageIteraction:  There is no PWM control-> you can only send 3 bits of color each time the image is drawn(1 bit per R, G and B)
                     Solution: Manually PWM the Matrix -> Draw the image fast enough that you see the color that you want
-                    Using 12 bit color deph(RGB 4/4/4) we draw 4 images to PWM the matrix-> This variable contains the iteraction that will be drawn this time 
+                    Using 12 bit color deph(RGB 4/4/4) we draw 4 images to PWM the matrix-> This variable contains the iteration that will be drawn this time 
     value: [0;3]
 */
 void ledmatrix::colorInformation(uint8_t width, uint8_t sector, uint8_t imageIteration){

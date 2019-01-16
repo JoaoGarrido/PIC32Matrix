@@ -1,6 +1,4 @@
-#include <Arduino.h>
 #include "ledpixel.h"
-//#include <Adafruit_GFX.h>
 
 void colorDebug(){
   //Basic color testing
@@ -43,12 +41,18 @@ ledmatrix led;
 
 void setup() {
   led.matrixInit();
-  led.drawPixelRGB444(3, 3, 0x0FE1); //rosa
-    led.drawPixelRGB444(3, 4, 0x0F00); //rosa
-  led.drawPixelRGB444(3, 5, 0x00E0); //rosa
-  led.drawPixelRGB444(3, 6, 0x0001); //rosa
-  led.drawPixelRGB444(15, 21, 0x0FF0); //rosa
-  led.drawPixelRGB444(15, 17, 0x00F0); //rosa
+  led.drawPixelRGB444(3, 3, 0x0FE1); 
+  led.drawPixelRGB444(3, 4, 0x0F00); 
+  led.drawPixelRGB444(3, 5, 0x00E0); 
+  led.drawPixelRGB444(3, 6, 0x0001); 
+  led.drawPixelRGB444(15, 21, 0x0FF0); 
+  led.drawPixelRGB444(15, 17, 0x00F0);
+
+  led.drawPixelRGB444(15, 16, 0x0001);
+  led.drawPixelRGB444(15, 17, 0x0003);
+  led.drawPixelRGB444(15, 18, 0x0007);
+  led.drawPixelRGB444(15, 19, 0x000F);
+
 }
 
 void loop() {
