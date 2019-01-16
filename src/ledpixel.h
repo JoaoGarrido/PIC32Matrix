@@ -1,5 +1,6 @@
 #include <Arduino.h>
 #include <Adafruit_GFX.h>
+#include <SPI.h>
 //#define CHANNELMIX444(r,g,b) r>>12|g>>8|b>>4
 
 //PORT E
@@ -36,66 +37,37 @@
 
 #define nLedsLine 64
 
-/*typedef union{ //R3 R2 R1 R0 | G3 G2 G1 G0 | B3 B2 B1 B0 | - - - -
-     uint16_t p16;
 
-    struct {
-        bool R3 : 1;
-        bool R2 : 1;
-        bool R1 : 1;
-        bool R0 : 1;
-        bool G3 : 1;
-        bool G2 : 1;
-        bool G1 : 1;
-        bool G0 : 1;
-        bool B3 : 1;
-        bool B2 : 1;
-        bool B1 : 1;
-        bool B0 : 1;
-        //undefined
-        bool U3 : 1;
-        bool U2 : 1;
-        bool U1 : 1;
-        bool U0 : 1;
-    }
-
-    struct{
-        uint8_t R : 4;
-        uint8_t G : 4;
-        uint8_t B : 4;
-        //uint8_t U : 4;
-    }
-} pixel444;*/
-
-class ledmatrix : public Adafruit_GFX
-{
-private:
+class Ledmatrix : public Adafruit_GFX{
+public:
+    Ledmatrix();
+    ~Ledmatrix();
+    void matrixInit();
+    void matrixUpdate();
+    void drawPixel(int16_t x, int16_t y, uint16_t color);
+    void drawPixelRGB565(int16_t x, int16_t y, uint16_t color);
+    void drawPixelRGB888(int16_t x, int16_t y, uint32_t color);
+    void drawPixelRGB444(int16_t x, int16_t y, uint16_t color);
+    void bufferFill(int16_t x, int16_t y, uint8_t r, uint8_t g, uint8_t b);
+    
+ private:
     uint16_t matrixBuffer[32][64]; //R3 R2 R1 R0 | G3 G2 G1 G0 | B3 B2 B1 B0 | - - - -
     void latch(uint8_t propagationTime);
     void colorInformation(uint8_t width, uint8_t sector, uint8_t imageIteration);
     void selectSector(uint8_t sector);
-public:
-    void matrixInit();
-    void matrixUpdate();
-    void drawPixel(uint16_t x, uint16_t y, uint16_t color);
-    void drawPixelRGB565(uint16_t x, uint16_t y, uint16_t color);
-    void drawPixelRGB888(uint16_t x, uint16_t y, uint32_t color);
-    void drawPixelRGB444(uint16_t x, uint16_t y, uint16_t color);
-    void bufferFill(uint16_t x, uint16_t y, uint8_t r, uint8_t g, uint8_t b);
-    
-    ledmatrix(/* args */);
-    ~ledmatrix();
 };
-ledmatrix::ledmatrix(/*args */):Adafruit_GFX(64, 32)
+
+Ledmatrix::Ledmatrix():Adafruit_GFX(64, 32)
+{
+    matrixInit();
+}
+
+Ledmatrix::~Ledmatrix()
 {
 }
 
-ledmatrix::~ledmatrix()
-{
-}
 
-
-void ledmatrix::matrixInit(){
+void Ledmatrix::matrixInit(){
     //Set 0utputs
     TRISE = 0xFF01;
     TRISF = 0xFFAF;
@@ -108,7 +80,7 @@ void ledmatrix::matrixInit(){
     //lat_OE = 1; //turn off output enable -> MAYBE NOT NEEDED - TEST!!
 }
 
-void ledmatrix::matrixUpdate(){
+void Ledmatrix::matrixUpdate(){
     static uint8_t iteration = 0;
     for(uint8_t sector = 0; sector < 16; sector++){
         selectSector(sector);
@@ -127,16 +99,16 @@ Variables:
     g: 4 bit color green
     b: 4 bit color
 */
-void ledmatrix::bufferFill(uint16_t x, uint16_t y, uint8_t r, uint8_t g,uint8_t b){
+void Ledmatrix::bufferFill(int16_t x, int16_t y, uint8_t r, uint8_t g,uint8_t b){
     uint16_t auxColor = (r << 12) | (g << 8) | (b << 4);
     matrixBuffer[x][y] = auxColor;
 }
 
-void ledmatrix::drawPixel(uint16_t x, uint16_t y, uint16_t color){
+void Ledmatrix::drawPixel(int16_t x, int16_t y, uint16_t color){
     drawPixelRGB565(x, y, color);
 }
 
-void ledmatrix::drawPixelRGB565(uint16_t x, uint16_t y, uint16_t color){
+void Ledmatrix::drawPixelRGB565(int16_t x, int16_t y, uint16_t color){
     //RGB565 to RGB444 
     uint8_t r =  color >> 12;        // RRRRrggggggbbbbb
     uint8_t g = (color >>  7) & 0xF; // rrrrrGGGGggbbbbb
@@ -144,13 +116,13 @@ void ledmatrix::drawPixelRGB565(uint16_t x, uint16_t y, uint16_t color){
     bufferFill(x, y, r, g, b);
 }
 
-void ledmatrix::drawPixelRGB888(uint16_t x, uint16_t y, uint32_t color){
+void Ledmatrix::drawPixelRGB888(int16_t x, int16_t y, uint32_t color){
     //RGB888 to RGB444 
     //color565_444(color);
     //bufferFill(x, y, r, g, b);
 }
 
-void ledmatrix::drawPixelRGB444(uint16_t x, uint16_t y, uint16_t color){
+void Ledmatrix::drawPixelRGB444(int16_t x, int16_t y, uint16_t color){
     uint8_t r = (color >> 8) & 0x0F;
     uint8_t g = (color >> 4) & 0x0F;
     uint8_t b = color & 0x0F;
@@ -163,7 +135,7 @@ Variables:
   sector: a sector aggregates 2 rows: row and row+16
     values: [0;15]
 */
-void ledmatrix::selectSector(uint8_t sector){
+void Ledmatrix::selectSector(uint8_t sector){
     latA = (sector & 0x01); //LSB
     latB = (sector & 0x02) >> 1;
     latC = (sector & 0x04) >> 2;
@@ -174,7 +146,7 @@ void ledmatrix::selectSector(uint8_t sector){
 Description:  writes on the LAT and OE registers to indicate that the color information data for that sector is over.
               After that turns off the LEDs, waits for the signal propagation to happen and turns ON the LEDs again
 */
-void ledmatrix::latch(uint8_t propagationTime){
+void Ledmatrix::latch(uint8_t propagationTime){
     latLAT = 1;
     latLAT = 0;
     lat_OE = 0;
@@ -193,7 +165,7 @@ Variables:
                     Using 12 bit color deph(RGB 4/4/4) we draw 4 images to PWM the matrix-> This variable contains the iteration that will be drawn this time 
     value: [0;3]
 */
-void ledmatrix::colorInformation(uint8_t width, uint8_t sector, uint8_t imageIteration){
+void Ledmatrix::colorInformation(uint8_t width, uint8_t sector, uint8_t imageIteration){
     for(uint8_t col = 0; col < width; col++){
         //sector 1
         latR1 = (matrixBuffer[sector][col] >> (15 - imageIteration)) & 0x01;   //matrixBuffer[sector][col][15 - imageIteraction];

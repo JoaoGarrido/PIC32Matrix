@@ -37,10 +37,10 @@ void colorDebug(){
   }
 }
 
-ledmatrix led;
+Ledmatrix led;
+//Adafruit_GFX ad;
 
 void setup() {
-  led.matrixInit();
   led.drawPixelRGB444(3, 3, 0x0FE1); 
   led.drawPixelRGB444(3, 4, 0x0F00); 
   led.drawPixelRGB444(3, 5, 0x00E0); 
