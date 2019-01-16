@@ -105,7 +105,7 @@ void Ledmatrix::bufferFill(int16_t x, int16_t y, uint8_t r, uint8_t g,uint8_t b)
 }
 
 void Ledmatrix::drawPixel(int16_t x, int16_t y, uint16_t color){
-    drawPixelRGB565(x, y, color);
+    drawPixelRGB565(y, x, color);
 }
 
 void Ledmatrix::drawPixelRGB565(int16_t x, int16_t y, uint16_t color){
@@ -128,6 +128,7 @@ void Ledmatrix::drawPixelRGB444(int16_t x, int16_t y, uint16_t color){
     uint8_t b = color & 0x0F;
     bufferFill(x, y, r, g, b);
 }
+
 
 /* selectSector
 Description: writes on the registers the sector information
