@@ -105,6 +105,7 @@ void ledmatrix::matrixInit(){
     LATE = 0;
     LATF = 0;
     LATD = 0;
+    matrixBuffer[32][64] = {0};
     //lat_OE = 1; //turn off output enable -> MAYBE NOT NEEDED - TEST!!
 }
 
@@ -131,7 +132,6 @@ void ledmatrix::bufferFill(int16_t x, int16_t y, uint8_t r, uint8_t g,uint8_t b)
     uint16_t auxColor = (r << 12) | (g << 8) | (b << 4);
     matrixBuffer[x][y] = auxColor;
 }
-
 
 void ledmatrix::drawPixel(int16_t x, int16_t y, uint16_t color){
     drawPixelRGB565(x, y, color);
