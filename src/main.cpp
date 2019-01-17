@@ -261,7 +261,7 @@ const uint16_t gba[] ={
   0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF,   // 0x07F0 (2032)
   0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF,   // 0x0800 (2048)
 };
-
+/*
 void colorDebug(){
   //Basic color testing
   for(int a = 0; a < nLedsLine; a++){
@@ -297,13 +297,16 @@ void colorDebug(){
     latCLK = 1;
     latCLK = 0;
   }
-}
+}*/
 
-Ledmatrix led(64,32);
+Ledmatrix led(128,32);
 //Adafruit_GFX ad;
 
 void setup() {
-  //led.drawRGBBitmap(0, 0, MegamanSprite3,64 , 32);
+  
+  led.drawRGBBitmap(0, 0, MegamanSprite3,64 , 32);
+  led.drawRGBBitmap(64, 0, gba,64 , 32);
+  
   //led.writePixel(0,31,0xffff);
   //led.writePixel(63,31,0xffff);
 

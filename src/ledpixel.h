@@ -34,8 +34,6 @@
 #define latB2 LATEbits.LATE2
 #define latCLK LATEbits.LATE1
 
-#define nLedsLine 64
-
 #define MATRIX_MAX_HEIGHT 32
 #define MATRIX_MAX_WIDTH 128 
 
@@ -53,12 +51,14 @@ class Ledmatrix : public Adafruit_GFX{
         void bufferFill(int16_t x, int16_t y, uint8_t r, uint8_t g, uint8_t b);
         
     private:
-        uint16_t **matrixBuffer; //R3 R2 R1 R0 | G3 G2 G1 G0 | B3 B2 B1 B0 | - - - -
-        uint16_t *matrixBuffer;
-        //uint16_t matrixBuffer[32][64] = {{0}}; //R3 R2 R1 R0 | G3 G2 G1 G0 | B3 B2 B1 B0 | - - - -
+        //uint16_t **matrixBuffer; //R3 R2 R1 R0 | G3 G2 G1 G0 | B3 B2 B1 B0 | - - - -
+        //uint16_t *matrixBuffer;
+        uint16_t matrixBuffer[MATRIX_MAX_HEIGHT][MATRIX_MAX_WIDTH] = {{0}}; //R3 R2 R1 R0 | G3 G2 G1 G0 | B3 B2 B1 B0 | - - - -
         uint8_t error[32] = {0};
+        uint8_t _height, _width;
+
         void latch(uint8_t show_time);
-        void colorInformation(uint8_t width, uint8_t sector, uint8_t imageIteration);
+        void colorInformation(uint8_t sector, uint8_t imageIteration);
         void selectSector(uint8_t sector);
 };
 
@@ -83,19 +83,19 @@ void Ledmatrix::matrixInit(uint8_t width, uint8_t height){
     LATD = 0;
     
     if(height > MATRIX_MAX_HEIGHT || width > MATRIX_MAX_WIDTH) error[0] = 1;
-
+    _height = height;
+    _width  = width;
     //buffer 
-    //Didn't work
+    /*//Didn't work
     //dynamic buffer allocation C -> malloc
-    
     matrixBuffer = (uint16_t **) malloc(height * sizeof(uint16_t *));
     if(matrixBuffer == NULL) exit;
     for(int i = 0; i < height; i++){
         matrixBuffer[i] = (uint16_t *) malloc(width * sizeof(uint16_t));
         if(matrixBuffer[i] == NULL) exit;
     }
-    //memset(matrixBuffer, 0, height * width * sizeof(uint16_t) );
-    
+    memset(matrixBuffer, 0, height * width * sizeof(uint16_t) );
+    */
 
     //Didn't work
     /*//buffer allocation C++ -> new
@@ -113,9 +113,9 @@ void Ledmatrix::matrixInit(uint8_t width, uint8_t height){
 
 void Ledmatrix::matrixUpdate(){
     static uint8_t iteration = 0;
-    for(uint8_t sector = 0; sector < 16; sector++){
+    for(uint8_t sector = 0; sector < _height/2; sector++){
         selectSector(sector);
-        colorInformation(64,sector,iteration);
+        colorInformation(sector,iteration);
         latch(2 * (8>>iteration));
     }
     iteration = (iteration + 1) % 4; //0->1->2->3->0...
@@ -189,7 +189,6 @@ void Ledmatrix::latch(uint8_t show_time){
 /* colorInformation
 Description: writes on the registers the color information present on the buffer lineary
 Variables:
-  width: the matrix max Width 
   row: the sector that will be written
     values: [0;15]
   imageIteraction:  There is no PWM control-> you can only send 3 bits of color each time the image is drawn(1 bit per R, G and B)
@@ -197,10 +196,8 @@ Variables:
                     Using 12 bit color deph(RGB 4/4/4) we draw 4 images to PWM the matrix-> This variable contains the iteration that will be drawn this time 
     value: [0;3]
 */
-void Ledmatrix::colorInformation(uint8_t width, uint8_t sector, uint8_t imageIteration){
-    for(uint8_t x = 0; x < width; x++){
-        matrixBuffer[sector][x] = 0xFFFF;
-        matrixBuffer[sector+16][x] = 0xFFFF;
+void Ledmatrix::colorInformation(uint8_t sector, uint8_t imageIteration){
+    for(uint8_t x = 0; x < _width; x++){
         //sector 1
         latR1 = (matrixBuffer[sector][x] >> (15 - imageIteration)) & 0x01;  
         latG1 = (matrixBuffer[sector][x] >> (11 - imageIteration)) & 0x01;
