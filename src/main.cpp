@@ -299,11 +299,11 @@ void colorDebug(){
   }
 }
 
-Ledmatrix led;
+Ledmatrix led(64,32);
 //Adafruit_GFX ad;
 
 void setup() {
-  led.drawRGBBitmap(0, 0, MegamanSprite3,64 , 32);
+  //led.drawRGBBitmap(0, 0, MegamanSprite3,64 , 32);
   //led.writePixel(0,31,0xffff);
   //led.writePixel(63,31,0xffff);
 

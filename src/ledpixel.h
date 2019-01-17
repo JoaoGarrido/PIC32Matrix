@@ -1,7 +1,6 @@
 #include <Arduino.h>
 #include <Adafruit_GFX.h>
 #include <SPI.h>
-//#define CHANNELMIX444(r,g,b) r>>12|g>>8|b>>4
 
 //PORT E
 #define R1 RE7
@@ -37,29 +36,35 @@
 
 #define nLedsLine 64
 
+#define MATRIX_MAX_HEIGHT 32
+#define MATRIX_MAX_WIDTH 128 
+
 
 class Ledmatrix : public Adafruit_GFX{
-public:
-    Ledmatrix();
-    ~Ledmatrix();
-    void matrixInit();
-    void matrixUpdate();
-    void drawPixel(int16_t x, int16_t y, uint16_t color);
-    void drawPixelRGB565(int16_t x, int16_t y, uint16_t color);
-    void drawPixelRGB888(int16_t x, int16_t y, uint32_t color);
-    void drawPixelRGB444(int16_t x, int16_t y, uint16_t color);
-    void bufferFill(int16_t x, int16_t y, uint8_t r, uint8_t g, uint8_t b);
-    
- private:
-    uint16_t matrixBuffer[32][64]; //R3 R2 R1 R0 | G3 G2 G1 G0 | B3 B2 B1 B0 | - - - -
-    void latch(uint8_t propagationTime);
-    void colorInformation(uint8_t width, uint8_t sector, uint8_t imageIteration);
-    void selectSector(uint8_t sector);
+    public:
+        Ledmatrix(uint8_t width, uint8_t height);
+        ~Ledmatrix();
+        void matrixInit(uint8_t width, uint8_t height);
+        void matrixUpdate();
+        void drawPixel(int16_t x, int16_t y, uint16_t color);
+        void drawPixelRGB565(int16_t x, int16_t y, uint16_t color);
+        void drawPixelRGB888(int16_t x, int16_t y, uint32_t color);
+        void drawPixelRGB444(int16_t x, int16_t y, uint16_t color);
+        void bufferFill(int16_t x, int16_t y, uint8_t r, uint8_t g, uint8_t b);
+        
+    private:
+        uint16_t **matrixBuffer; //R3 R2 R1 R0 | G3 G2 G1 G0 | B3 B2 B1 B0 | - - - -
+        uint16_t *matrixBuffer;
+        //uint16_t matrixBuffer[32][64] = {{0}}; //R3 R2 R1 R0 | G3 G2 G1 G0 | B3 B2 B1 B0 | - - - -
+        uint8_t error[32] = {0};
+        void latch(uint8_t show_time);
+        void colorInformation(uint8_t width, uint8_t sector, uint8_t imageIteration);
+        void selectSector(uint8_t sector);
 };
 
-Ledmatrix::Ledmatrix():Adafruit_GFX(64, 32)
+Ledmatrix::Ledmatrix(uint8_t width, uint8_t height):Adafruit_GFX(width, height)
 {
-    matrixInit();
+    matrixInit(width, height);
 }
 
 Ledmatrix::~Ledmatrix()
@@ -67,17 +72,43 @@ Ledmatrix::~Ledmatrix()
 }
 
 
-void Ledmatrix::matrixInit(){
+void Ledmatrix::matrixInit(uint8_t width, uint8_t height){
     //Set 0utputs
     TRISE = 0xFF01;
     TRISF = 0xFFAF;
     TRISD = 0xF71F;
-
+    //Write outputs
     LATE = 0;
     LATF = 0;
     LATD = 0;
-    matrixBuffer[32][64] = {0};
-    //lat_OE = 1; //turn off output enable -> MAYBE NOT NEEDED - TEST!!
+    
+    if(height > MATRIX_MAX_HEIGHT || width > MATRIX_MAX_WIDTH) error[0] = 1;
+
+    //buffer 
+    //Didn't work
+    //dynamic buffer allocation C -> malloc
+    
+    matrixBuffer = (uint16_t **) malloc(height * sizeof(uint16_t *));
+    if(matrixBuffer == NULL) exit;
+    for(int i = 0; i < height; i++){
+        matrixBuffer[i] = (uint16_t *) malloc(width * sizeof(uint16_t));
+        if(matrixBuffer[i] == NULL) exit;
+    }
+    //memset(matrixBuffer, 0, height * width * sizeof(uint16_t) );
+    
+
+    //Didn't work
+    /*//buffer allocation C++ -> new
+    matrixBuffer = new uint16_t* [height];
+    for(int i = 0; i < height; i++){
+        matrixBuffer[i] = new uint16_t[width];
+        memset(matrixBuffer[i], 0, width * sizeof(uint16_t)); 
+    }
+    */
+    /*
+    matrixBuffer[0][0] = 0xFFFF;
+    matrixBuffer[16][32] = 0xFFFF;
+    */
 }
 
 void Ledmatrix::matrixUpdate(){
@@ -101,11 +132,11 @@ Variables:
 */
 void Ledmatrix::bufferFill(int16_t x, int16_t y, uint8_t r, uint8_t g,uint8_t b){
     uint16_t auxColor = (r << 12) | (g << 8) | (b << 4);
-    matrixBuffer[x][y] = auxColor;
+    matrixBuffer[y][x] = auxColor;
 }
 
 void Ledmatrix::drawPixel(int16_t x, int16_t y, uint16_t color){
-    drawPixelRGB565(y, x, color);
+    drawPixelRGB565(x, y, color);
 }
 
 void Ledmatrix::drawPixelRGB565(int16_t x, int16_t y, uint16_t color){
@@ -147,11 +178,11 @@ void Ledmatrix::selectSector(uint8_t sector){
 Description:  writes on the LAT and OE registers to indicate that the color information data for that sector is over.
               After that turns off the LEDs, waits for the signal propagation to happen and turns ON the LEDs again
 */
-void Ledmatrix::latch(uint8_t propagationTime){
+void Ledmatrix::latch(uint8_t show_time){
     latLAT = 1;
     latLAT = 0;
     lat_OE = 0;
-    delayMicroseconds(propagationTime); //NEEDS DELAY for propagation! 
+    delayMicroseconds(show_time);
     lat_OE = 1;
 }
 
@@ -167,15 +198,17 @@ Variables:
     value: [0;3]
 */
 void Ledmatrix::colorInformation(uint8_t width, uint8_t sector, uint8_t imageIteration){
-    for(uint8_t col = 0; col < width; col++){
+    for(uint8_t x = 0; x < width; x++){
+        matrixBuffer[sector][x] = 0xFFFF;
+        matrixBuffer[sector+16][x] = 0xFFFF;
         //sector 1
-        latR1 = (matrixBuffer[sector][col] >> (15 - imageIteration)) & 0x01;   //matrixBuffer[sector][col][15 - imageIteraction];
-        latG1 = (matrixBuffer[sector][col] >> (11 - imageIteration)) & 0x01;
-        latB1 = (matrixBuffer[sector][col] >> (7 - imageIteration)) & 0x01;
+        latR1 = (matrixBuffer[sector][x] >> (15 - imageIteration)) & 0x01;  
+        latG1 = (matrixBuffer[sector][x] >> (11 - imageIteration)) & 0x01;
+        latB1 = (matrixBuffer[sector][x] >> (7 - imageIteration)) & 0x01;
         //sector 2
-        latR2 = (matrixBuffer[sector+16][col] >> (15 - imageIteration)) & 0x01;
-        latG2 = (matrixBuffer[sector+16][col] >> (11 - imageIteration)) & 0x01;
-        latB2 = (matrixBuffer[sector+16][col] >> (7 - imageIteration)) & 0x01;
+        latR2 = (matrixBuffer[sector+16][x] >> (15 - imageIteration)) & 0x01;
+        latG2 = (matrixBuffer[sector+16][x] >> (11 - imageIteration)) & 0x01;
+        latB2 = (matrixBuffer[sector+16][x] >> (7 - imageIteration)) & 0x01;
         //registers to leds
         latCLK = 1;
         latCLK = 0; 
