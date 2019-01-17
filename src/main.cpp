@@ -1,4 +1,11 @@
 #include "ledpixel.h"
+#include <TaskScheduler.h>
+
+#define MATRIX_HEIGHT 32
+#define MATRIX_WIDTH 64
+
+Ledmatrix led(MATRIX_WIDTH,MATRIX_HEIGHT);
+Scheduler runner;
 
 const uint16_t MegamanSprite3[] ={
   0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,   // 0x0010 (16)
@@ -131,7 +138,7 @@ const uint16_t MegamanSprite3[] ={
   0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,   // 0x0800 (2048)
 };
 
-const uint16_t gba[] ={
+const uint16_t GBA[] ={
   0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF,   // 0x0010 (16)
   0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF,   // 0x0020 (32)
   0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF,   // 0x0030 (48)
@@ -261,71 +268,89 @@ const uint16_t gba[] ={
   0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF,   // 0x07F0 (2032)
   0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF,   // 0x0800 (2048)
 };
-/*
-void colorDebug(){
-  //Basic color testing
-  for(int a = 0; a < nLedsLine; a++){
-    if(a == 0){
-      latR1 = 1;
-      latG1 = 0;
-      latB1 = 0;
 
-      latR2 = 0;
-      latG2 = 0;
-      latB2 = 1;
-    }
-    else if(a == 1){
-      latR1 = 1;
-      latG1 = 1;
-      latB1 = 1;
-      latR2 = 0;
-      latG2 = 1;
-      latB2 = 0;
-    }
-    else if(!((a + 1) % 8) ){
-      latR1 = 1;
-      latG1 = 1;
-      latB1 = 1;
-      latR2 = 1;
-      latG2 = 1;
-      latB2 = 1;
-    }
-    else{
-      LATE = 0;
-    }
-  
-    latCLK = 1;
-    latCLK = 0;
-  }
-}*/
 
-Ledmatrix led(128,32);
-//Adafruit_GFX ad;
+const char text1[] PROGMEM = "FEUP IS COOL!!";
+const char text2[] PROGMEM = "Anime is trash!";
+
+int16_t    textX         = MATRIX_WIDTH,
+           textMin       = sizeof(text1) * -12,
+           hue           = 0;
+#define F2(progmem_ptr) (const __FlashStringHelper *)progmem_ptr
+ 
+void display_tickerCallback(){
+  led.matrixUpdate();
+}
+
+void scrollText1Callback(){
+  led.setTextSize(2);    
+  led.setTextWrap(false);
+  led.fillScreen(0);
+  led.setCursor(textX, 1);
+  led.print(F2(text1));
+  if((--textX) < textMin) textX = MATRIX_WIDTH;
+  hue += 7;
+  if(hue >= 1536) hue -= 1536;
+}
+
+
+void showText1Callback(){
+  led.setTextSize(2);     // size 1 == 8 pixels high
+  led.setTextWrap(false); // Don't wrap at end of line - will do ourselves
+  led.setCursor(2,2);
+  led.setTextColor(0xFFFF);
+  led.print(text1);
+}
+
+void showText2Callback(){
+  led.setTextSize(2);     // size 1 == 8 pixels high
+  led.setTextWrap(false); // Don't wrap at end of line - will do ourselves
+  led.setCursor(2,2);
+  led.setTextColor(0xFFFF);
+  led.print(text2);
+}
+void showMegamanSprite3Callback(){
+  led.drawRGBBitmap(0, 0, MegamanSprite3,64 , 32);
+}
+
+void showGBACallback(){
+  led.drawRGBBitmap(0, 0, GBA,64 , 32);
+}
+
+void showMegamanSprite3Callback(uint8_t x, uint8_t y){
+  led.drawRGBBitmap(x, y, MegamanSprite3,64 , 32);
+}
+
+void showGBACallback(uint8_t x, uint8_t y){
+  led.drawRGBBitmap(x, y, GBA,64 , 32);
+}
+
+void drawSomePixelsCallback(){
+  led.drawPixelRGB444(0, 0, 0x0FFF);
+  led.drawPixelRGB444(64, 0, 0x0F00);
+  led.drawPixelRGB444(0, 0, 0x000F);
+  led.drawPixelRGB444(0, 0, 0x0F0);
+  led.drawPixelRGB444(0, 0, 0x0FE2);
+}
+
+Task display_ticker(2, TASK_FOREVER, &display_tickerCallback);
+Task scrollText1(20, TASK_FOREVER, &scrollText1Callback);
+
+//This is not working yet
+Task showText1(20,1, &showText1Callback);
+Task showText2(20,2, &showText2Callback);
+Task showMegamanSprite3(20,1, &showMegamanSprite3Callback);
+Task showGBA(20,1, &showGBACallback);
+Task drawSomePixels(20, 1, &drawSomePixelsCallback);
 
 void setup() {
-  
-  led.drawRGBBitmap(0, 0, MegamanSprite3,64 , 32);
-  led.drawRGBBitmap(64, 0, gba,64 , 32);
-  
-  //led.writePixel(0,31,0xffff);
-  //led.writePixel(63,31,0xffff);
-
-  /*
-  led.drawPixelRGB444(3, 3, 0x0FE1); 
-  led.drawPixelRGB444(3, 4, 0x0F00); 
-  led.drawPixelRGB444(3, 5, 0x00E0); 
-  led.drawPixelRGB444(3, 6, 0x0001); 
-  led.drawPixelRGB444(15, 21, 0x0FF0); 
-  led.drawPixelRGB444(15, 17, 0x00F0);
-
-  led.drawPixelRGB444(15, 16, 0x0001);
-  led.drawPixelRGB444(15, 17, 0x0003);
-  led.drawPixelRGB444(15, 18, 0x0007);
-  led.drawPixelRGB444(15, 19, 0x000F);
-  */
+  runner.init();
+  runner.addTask(display_ticker);
+  runner.addTask(scrollText1);
+  display_ticker.enable();
+  scrollText1.enable();
 }
 
 void loop() {
-  led.matrixUpdate();
-  
+  runner.execute();
 }
