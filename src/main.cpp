@@ -271,44 +271,53 @@ const uint16_t GBA[] ={
 
 
 const char text1[] PROGMEM = "FEUP IS COOL!!";
+const char text64[] PROGMEM = "FEUP IS     COOL!!";
+
 const char text2[] PROGMEM = "Anime is trash!";
 
 int16_t    textX         = MATRIX_WIDTH,
            textMin       = sizeof(text1) * -12,
            hue           = 0;
-#define F2(progmem_ptr) (const __FlashStringHelper *)progmem_ptr
  
 void display_tickerCallback(){
   led.matrixUpdate();
 }
 
-void scrollText1Callback(){
+void scrollText32x64Callback(){
   led.setTextSize(2);    
   led.setTextWrap(false);
   led.fillScreen(0);
-  led.setCursor(textX, 1);
-  led.print(F2(text1));
-  if((--textX) < textMin) textX = MATRIX_WIDTH;
-  hue += 7;
-  if(hue >= 1536) hue -= 1536;
-}
-
-
-void showText1Callback(){
-  led.setTextSize(2);     // size 1 == 8 pixels high
-  led.setTextWrap(false); // Don't wrap at end of line - will do ourselves
-  led.setCursor(2,2);
-  led.setTextColor(0xFFFF);
+  led.setCursor(textX, 5);
   led.print(text1);
+  if((--textX) < textMin) textX = MATRIX_WIDTH;
 }
 
-void showText2Callback(){
+void scrollText32x128Callback(){
+  led.setTextSize(2);    
+  led.setTextWrap(false);
+  led.fillScreen(0);
+  delayMicroseconds(1);
+  led.setCursor(textX, 5);
+  led.print(text1);
+  if((--textX) < textMin) textX = MATRIX_WIDTH;
+}
+
+void showText64Callback(){
+  led.setTextSize(1);     // size 1 == 8 pixels high
+  led.setTextWrap(true); // Don't wrap at end of line - will do ourselves
+  led.setCursor(10,2);
+  led.setTextColor(0xFFFF);
+  led.print(text64);
+}
+
+void showText128Callback(){
   led.setTextSize(2);     // size 1 == 8 pixels high
   led.setTextWrap(false); // Don't wrap at end of line - will do ourselves
   led.setCursor(2,2);
   led.setTextColor(0xFFFF);
   led.print(text2);
 }
+
 void showMegamanSprite3Callback(){
   led.drawRGBBitmap(0, 0, MegamanSprite3,64 , 32);
 }
@@ -333,12 +342,13 @@ void drawSomePixelsCallback(){
   led.drawPixelRGB444(0, 0, 0x0FE2);
 }
 
-Task display_ticker(2, TASK_FOREVER, &display_tickerCallback);
-Task scrollText1(20, TASK_FOREVER, &scrollText1Callback);
+Task display_ticker(1, TASK_FOREVER, &display_tickerCallback);
+Task scrollText32x64(30, TASK_FOREVER, &scrollText32x64Callback);
+Task scrollText32x128(500, TASK_FOREVER, &scrollText32x128Callback);
 
 //This is not working yet
-Task showText1(20,1, &showText1Callback);
-Task showText2(20,2, &showText2Callback);
+Task showText64(20,1, &showText64Callback);
+Task showText128(20,1, &showText128Callback);
 Task showMegamanSprite3(20,1, &showMegamanSprite3Callback);
 Task showGBA(20,1, &showGBACallback);
 Task drawSomePixels(20, 1, &drawSomePixelsCallback);
@@ -346,9 +356,24 @@ Task drawSomePixels(20, 1, &drawSomePixelsCallback);
 void setup() {
   runner.init();
   runner.addTask(display_ticker);
-  runner.addTask(scrollText1);
+  runner.addTask(scrollText32x64);
+  runner.addTask(scrollText32x128);
+  runner.addTask(showText64);
+  runner.addTask(showText128);
+  runner.addTask(showMegamanSprite3);
+  runner.addTask(showGBA);
+  runner.addTask(drawSomePixels);
+
   display_ticker.enable();
-  scrollText1.enable();
+  /*
+  scrollText32x128.enable();
+  scrollText32x64.enable();
+  */
+  showText64.enable();
+  //showText2.enable();
+  /*showMegamanSprite3.enable();
+  showGBA.enable();*/
+
 }
 
 void loop() {
