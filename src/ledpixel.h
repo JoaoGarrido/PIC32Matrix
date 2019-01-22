@@ -92,7 +92,7 @@ void Ledmatrix::matrixInit(uint8_t width, uint8_t height, uint8_t brightness){
     LATD = 0;
     //Some checks
     if(height != MATRIX_MAX_HEIGHT) height = 32;
-    if(width != 64 || width != 128) width = 64;
+    if(width != 64 && width != 128) width = 64;
     if(brightness > 255) brightness = 255;
     if(brightness <= 0) brightness = 1;
     //object variables
@@ -257,6 +257,7 @@ void Ledmatrix::colorInformation(uint8_t sector, uint8_t imageIteration){
         latCLK = 1;
         latCLK = 0; 
     }
+
 }
 /*clearDisplay
 Description: clears display by setting every uint16_t in the matrix buffer to 0
