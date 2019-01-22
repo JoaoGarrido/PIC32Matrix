@@ -40,9 +40,9 @@
 
 class Ledmatrix : public Adafruit_GFX{
     public:
-        Ledmatrix(uint8_t width, uint8_t height);
+        Ledmatrix(uint8_t width, uint8_t height, uint8_t brightness);
         ~Ledmatrix();
-        void matrixInit(uint8_t width, uint8_t height);
+        void matrixInit(uint8_t width, uint8_t height, uint8_t brightness);
         void matrixUpdate();
         void drawPixel(int16_t x, int16_t y, uint16_t color);
         void drawPixelRGB565(int16_t x, int16_t y, uint16_t color);
@@ -55,24 +55,32 @@ class Ledmatrix : public Adafruit_GFX{
         //uint16_t *matrixBuffer;
         uint16_t matrixBuffer[MATRIX_MAX_HEIGHT][MATRIX_MAX_WIDTH] = {{0}}; //R3 R2 R1 R0 | G3 G2 G1 G0 | B3 B2 B1 B0 | - - - -
         uint8_t error[32] = {0};
-        uint8_t _height, _width;
+        uint8_t _height, _width, _brightness;
 
         void latch(uint8_t show_time);
         void colorInformation(uint8_t sector, uint8_t imageIteration);
         void selectSector(uint8_t sector);
 };
 
-Ledmatrix::Ledmatrix(uint8_t width, uint8_t height):Adafruit_GFX(width, height)
-{
-    matrixInit(width, height);
+Ledmatrix::Ledmatrix(uint8_t width, uint8_t height, uint8_t brightness):Adafruit_GFX(width, height){
+    matrixInit(width, height, brightness);
 }
 
 Ledmatrix::~Ledmatrix()
 {
 }
 
-
-void Ledmatrix::matrixInit(uint8_t width, uint8_t height){
+/* matrixInit
+Description: sets outputs and saves height and width
+Variables:
+    height: matrix height
+    width: matrix width
+    brightness: matrix brightness(related to show_time)
+Notes:
+    Tried to allocate the buffer dynamically but couldn't access array
+    (maybe some problem with dynamic memory allocation in the PIC32 library?)
+*/
+void Ledmatrix::matrixInit(uint8_t width, uint8_t height, uint8_t brightness){
     //Set 0utputs
     TRISE = 0xFF01;
     TRISF = 0xFFAF;
@@ -81,11 +89,17 @@ void Ledmatrix::matrixInit(uint8_t width, uint8_t height){
     LATE = 0;
     LATF = 0;
     LATD = 0;
-    
-    if(height > MATRIX_MAX_HEIGHT || width > MATRIX_MAX_WIDTH) error[0] = 1;
+    //Some checks
+    if(height != MATRIX_MAX_HEIGHT) height = 32;
+    if(width != 64 || width != 128) width = 64;
+    if(brightness > 255) brightness = 255;
+    if(brightness <= 0) brightness = 1;
+    //object variables
     _height = height;
-    _width  = width;
-    //buffer 
+    _width  = width; 
+    _brightness = brightness;
+    
+    //Testing dynamic buffer allocation
     /*//Didn't work
     //dynamic buffer allocation C -> malloc
     matrixBuffer = (uint16_t **) malloc(height * sizeof(uint16_t *));
@@ -105,18 +119,28 @@ void Ledmatrix::matrixInit(uint8_t width, uint8_t height){
         memset(matrixBuffer[i], 0, width * sizeof(uint16_t)); 
     }
     */
-    /*
-    matrixBuffer[0][0] = 0xFFFF;
-    matrixBuffer[16][32] = 0xFFFF;
-    */
 }
 
+/* matrixUpdate
+Description: refresh the matrix
+            for each sector{
+                writes on the ABCD outputs the sector
+                writes the color information for each sector
+                
+            } 
+Variables:
+    height: matrix height
+    width: matrix width
+Notes:
+    Tried to allocate the buffer dynamically but couldn't access array
+    (maybe some problem with dynamic memory allocation in the PIC32 library?)
+*/
 void Ledmatrix::matrixUpdate(){
     static uint8_t iteration = 0;
     for(uint8_t sector = 0; sector < _height/2; sector++){
         selectSector(sector);
         colorInformation(sector,iteration);
-        latch(2 * (8>>iteration));
+        latch(_brightness*(8>>iteration));
     }
     iteration = (iteration + 1) % 4; //0->1->2->3->0...
 }

@@ -2,9 +2,16 @@
 #include <TaskScheduler.h>
 
 #define MATRIX_HEIGHT 32
+// MATRIX_WIDTH = 32 
 #define MATRIX_WIDTH 64
+// MATRIX_WIDTH = 64 or MATRIX_WIDTH = 128
+#define BRIGHTNESS 255
+/* BRIGHTNESS ]0;255], 
+brighteness is related to time the leds are enabled
+to get more fps->reduce brighness
+*/
 
-Ledmatrix led(MATRIX_WIDTH,MATRIX_HEIGHT);
+Ledmatrix led(MATRIX_WIDTH,MATRIX_HEIGHT, BRIGHTNESS);
 Scheduler runner;
 
 const uint16_t MegamanSprite3[] ={
@@ -365,11 +372,13 @@ void setup() {
   runner.addTask(drawSomePixels);
 
   display_ticker.enable();
-  /*
-  scrollText32x128.enable();
+  //Example 32x64
   scrollText32x64.enable();
+  //showText64.enable();
+
+    /*
+  scrollText32x128.enable();
   */
-  showText64.enable();
   //showText2.enable();
   /*showMegamanSprite3.enable();
   showGBA.enable();*/
