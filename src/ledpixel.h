@@ -163,9 +163,26 @@ void Ledmatrix::bufferFill(int16_t x, int16_t y, uint8_t r, uint8_t g,uint8_t b)
     if(y < _height && x < _width)   matrixBuffer[y][x] = auxColor;
 }
 
+
+/*drawPixel
+Description: method belonging to Adafruit_GFX that is overwritten so that our function writes to our buffer
+Variables:
+    x: x position
+    y: y position
+    color : rrrr rggg gggb bbbb 16bit 565
+*/
+
 void Ledmatrix::drawPixel(int16_t x, int16_t y, uint16_t color){
     drawPixelRGB565(x, y, color);
 }
+
+/*drawPixelRGB565
+Description: slices the 565 variable color to extract the 444 rgb channel values
+Variables:
+    x: x position
+    y: y position
+    color : rrrr rggg gggb bbbb 16bit
+*/
 
 void Ledmatrix::drawPixelRGB565(int16_t x, int16_t y, uint16_t color){
     //RGB565 to RGB444 
@@ -175,11 +192,13 @@ void Ledmatrix::drawPixelRGB565(int16_t x, int16_t y, uint16_t color){
     bufferFill(x, y, r, g, b);
 }
 
-void Ledmatrix::drawPixelRGB888(int16_t x, int16_t y, uint32_t color){
-    //RGB888 to RGB444 
-    //color565_444(color);
-    //bufferFill(x, y, r, g, b);
-}
+/*drawPixelRGB444
+Description: slices the 444 variable color to extract the 4bit channel values
+Variables:
+    x: x position
+    y: y position
+    color : 0000 rrrr gggg bbbb 16bit
+*/
 
 void Ledmatrix::drawPixelRGB444(int16_t x, int16_t y, uint16_t color){
     uint8_t r = (color >> 8) & 0x0F;
@@ -239,7 +258,9 @@ void Ledmatrix::colorInformation(uint8_t sector, uint8_t imageIteration){
         latCLK = 0; 
     }
 }
-
+/*clearDisplay
+Description: clears display by setting every uint16_t in the matrix buffer to 0
+*/
 void Ledmatrix::clearDisplay(void) {
     memset(matrixBuffer, 0, sizeof(matrixBuffer));
 }
