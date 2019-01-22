@@ -49,7 +49,8 @@ class Ledmatrix : public Adafruit_GFX{
         void drawPixelRGB888(int16_t x, int16_t y, uint32_t color);
         void drawPixelRGB444(int16_t x, int16_t y, uint16_t color);
         void bufferFill(int16_t x, int16_t y, uint8_t r, uint8_t g, uint8_t b);
-        
+        void clearDisplay(void);
+
     private:
         //uint16_t **matrixBuffer; //R3 R2 R1 R0 | G3 G2 G1 G0 | B3 B2 B1 B0 | - - - -
         //uint16_t *matrixBuffer;
@@ -140,7 +141,7 @@ void Ledmatrix::matrixUpdate(){
     for(uint8_t sector = 0; sector < _height/2; sector++){
         selectSector(sector);
         colorInformation(sector,iteration);
-        latch(_brightness*(8>>iteration));
+        latch(5*(_brightness/255)*(8>>iteration));
     }
     iteration = (iteration + 1) % 4; //0->1->2->3->0...
 }
@@ -234,4 +235,8 @@ void Ledmatrix::colorInformation(uint8_t sector, uint8_t imageIteration){
         latCLK = 1;
         latCLK = 0; 
     }
+}
+
+void Ledmatrix::clearDisplay(void) {
+    memset(matrixBuffer, 0, sizeof(matrixBuffer));
 }

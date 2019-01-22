@@ -293,7 +293,8 @@ void display_tickerCallback(){
 void scrollText32x64Callback(){
   led.setTextSize(2);    
   led.setTextWrap(false);
-  led.fillScreen(0);
+  led.setTextColor(0xA142);
+  led.clearDisplay();
   led.setCursor(textX, 5);
   led.print(text1);
   if((--textX) < textMin) textX = MATRIX_WIDTH;
@@ -302,8 +303,7 @@ void scrollText32x64Callback(){
 void scrollText32x128Callback(){
   led.setTextSize(2);    
   led.setTextWrap(false);
-  led.fillScreen(0);
-  delayMicroseconds(1);
+  led.clearDisplay();
   led.setCursor(textX, 5);
   led.print(text1);
   if((--textX) < textMin) textX = MATRIX_WIDTH;
@@ -313,7 +313,7 @@ void showText64Callback(){
   led.setTextSize(1);     // size 1 == 8 pixels high
   led.setTextWrap(true); // Don't wrap at end of line - will do ourselves
   led.setCursor(10,2);
-  led.setTextColor(0xFFFF);
+  led.setTextColor(0xA142);
   led.print(text64);
 }
 
@@ -351,14 +351,21 @@ void drawSomePixelsCallback(){
 
 Task display_ticker(1, TASK_FOREVER, &display_tickerCallback);
 Task scrollText32x64(30, TASK_FOREVER, &scrollText32x64Callback);
-Task scrollText32x128(500, TASK_FOREVER, &scrollText32x128Callback);
+Task showText64(20,1, &showText64Callback);
 
 //This is not working yet
-Task showText64(20,1, &showText64Callback);
+Task scrollText32x128(500, TASK_FOREVER, &scrollText32x128Callback);
 Task showText128(20,1, &showText128Callback);
 Task showMegamanSprite3(20,1, &showMegamanSprite3Callback);
 Task showGBA(20,1, &showGBACallback);
 Task drawSomePixels(20, 1, &drawSomePixelsCallback);
+
+int endTime = 5000;
+int startTime = 0;
+int atm = 0;
+int n = 0;
+int flag = 1;
+
 
 void setup() {
   runner.init();
@@ -372,19 +379,41 @@ void setup() {
   runner.addTask(drawSomePixels);
 
   display_ticker.enable();
-  //Example 32x64
-  scrollText32x64.enable();
-  //showText64.enable();
-
-    /*
-  scrollText32x128.enable();
-  */
-  //showText2.enable();
-  /*showMegamanSprite3.enable();
-  showGBA.enable();*/
-
 }
 
 void loop() {
   runner.execute();
+  atm = millis();
+  if(atm - startTime > 8000){
+    startTime = atm;
+    n++;
+    if(n>3) n=0;
+    flag = 1;
+  }
+
+  if(n==0 && flag){
+    drawSomePixels.disable();
+    led.clearDisplay();
+    showText64.restart();
+    flag = 0;
+  }  
+  if(n==1 && flag){
+    showText64.disable();
+    led.clearDisplay();
+    scrollText32x64.restart();
+    flag = 0;
+  }
+  if(n==2 && flag){
+    scrollText32x64.disable();
+    led.clearDisplay();
+    showMegamanSprite3.restart();
+    flag = 0;
+  }
+  if(n==3 && flag){
+    showMegamanSprite3.disable();
+    led.clearDisplay();
+    drawSomePixels.restart();
+    flag = 0; 
+  }
+
 }
