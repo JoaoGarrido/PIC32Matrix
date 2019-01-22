@@ -140,10 +140,13 @@ void Ledmatrix::matrixUpdate(){
     static uint8_t iteration = 0;
     for(uint8_t sector = 0; sector < _height/2; sector++){
         selectSector(sector);
-        colorInformation(sector,iteration);
-        latch(5*(_brightness/255)*(8>>iteration));
+        while(iteration < 4){
+            colorInformation(sector,iteration);
+            latch(10*(_brightness/255)*(8>>iteration));
+            iteration++;
+        }
+        iteration = 0;
     }
-    iteration = (iteration + 1) % 4; //0->1->2->3->0...
 }
 
 /* bufferFill
@@ -157,7 +160,7 @@ Variables:
 */
 void Ledmatrix::bufferFill(int16_t x, int16_t y, uint8_t r, uint8_t g,uint8_t b){
     uint16_t auxColor = (r << 12) | (g << 8) | (b << 4);
-    matrixBuffer[y][x] = auxColor;
+    if(y < _height && x < _width)   matrixBuffer[y][x] = auxColor;
 }
 
 void Ledmatrix::drawPixel(int16_t x, int16_t y, uint16_t color){
