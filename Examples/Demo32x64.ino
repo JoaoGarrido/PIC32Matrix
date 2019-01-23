@@ -602,14 +602,6 @@ void drawSomePixelsCallback(){
   led.drawPixelRGB565(63, 31, 0xFBC0);
 }
 
-void drawSomeLinesCallback(){
-
-}
-
-void colorTestingCallback(){
-  
-}
-
 //display UPDATER
 Task display_ticker(1, TASK_FOREVER, &display_tickerCallback);
 //TEXT TASKS
@@ -622,11 +614,6 @@ Task showBlockcraft(20,1, &showBlockcraftCallback);
 Task showSunset(20,1, &showSunsetCallback);
 //TESTING TASKS
 Task drawSomePixels(20, 1, &drawSomePixelsCallback);
-Task drawSomeLines(20, 1, &drawSomeLinesCallback);
-Task colorTesting(20, 1, &colorTestingCallback);
-//32x128 TASKS
-Task showText128(20,1, &showText128Callback);
-Task scrollText32x128(500, TASK_FOREVER, &scrollText32x128Callback);
 
 int endTime = 5000;
 int startTime = 0;
@@ -649,13 +636,7 @@ void setup() {
   runner.addTask(showSunset);
   //Testing
   runner.addTask(drawSomePixels);
-  runner.addTask(drawSomeLines);
-  runner.addTask(colorTesting);
 
-  /* DEMO 32x128 BUGGED
-  runner.addTask(scrollText32x128);
-  runner.addTask(showText128);
-  */
   display_ticker.enable();
 }
 
@@ -709,18 +690,6 @@ void loop() {
     showSunset.disable();
     led.clearDisplay();
     drawSomePixels.restart();
-    flag = 0; 
-  }
-  if(n==7 && flag){
-    drawSomePixels.disable();
-    led.clearDisplay();
-    drawSomeLines.restart();
-    flag = 0; 
-  }  
-  if(n==8 && flag){
-    drawSomePixels.disable();
-    led.clearDisplay();
-    colorTesting.restart();
     flag = 0; 
   }
 }
